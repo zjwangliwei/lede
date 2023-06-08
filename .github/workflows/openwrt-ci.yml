@@ -158,7 +158,8 @@ jobs:
           CONFIG_PACKAGE_luci-app-nlbwmon=y
           CONFIG_PACKAGE_luci-app-dockerman=y
           CONFIG_PACKAGE_luci-app-qos=y
-          CONFIG_PACKAGE_luci-app-accesscontrol=y          
+          CONFIG_PACKAGE_luci-app-accesscontrol=y
+          CONFIG_PACKAGE_luci-app-syncdial=y
           EOF
 
           # LuCI主题:

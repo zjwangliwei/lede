@@ -46,22 +46,12 @@ jobs:
       - name: Checkout OpenWrt
         uses: actions/checkout@v3
 
-          # sudo mkdir -p -m 777 /mnt/openwrt/bin /mnt/openwrt/build_dir/host /mnt/openwrt/build_dir/hostpkg /mnt/openwrt/dl /mnt/openwrt/feeds /mnt/openwrt/staging_dir
-          # ln -s /mnt/openwrt/bin ./bin
-          # mkdir -p ./build_dir/host && ln -s /mnt/openwrt/build_dir/host ./build_dir/host
-          # mkdir -p ./build_dir/host && ln -s /mnt/openwrt/build_dir/hostpkg ./build_dir/hostpkg
-          # ln -s /mnt/openwrt/dl ./dl
-          # ln -s /mnt/openwrt/feeds ./feeds
-          # ln -s /mnt/openwrt/staging_dir ./staging_dir
-
-      - name: Checkout OpenWrt
-        uses: actions/checkout@v3
-
       - name: Update feeds
         run: |
+          sed -i 's/#src-git helloworld/src-git helloworld/g' ./feeds.conf.default
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-
+          
       - name: Generate configuration file
         run: |
           rm -f ./.config*

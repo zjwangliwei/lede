@@ -1,59 +1,66 @@
-#=================================================
-# https://github.com/P3TERX/Actions-OpenWrt
-# Description: Build OpenWrt using GitHub Actions
-# Lisence: MIT
-# Author: P3TERX
-# Blog: https://p3terx.com
-#=================================================
-name: Build OpenWrt
-on: 
-  release:
-    types: [published]
+#
+# This is free software, lisence use MIT.
+# 
+# Copyright (C) 2019 P3TERX <https://p3terx.com>
+# Copyright (C) 2019 KFERMercer <KFER.Mercer@gmail.com>
+# 
+# <https://github.com/KFERMercer/OpenWrt-CI>
+#
+
+name: OpenWrt-CI
+
+on:
   push:
     branches: 
       - master
-    paths:
-      - '.config'
-#  schedule:
-# - cron: 0 8 * * 5
-#  watch:
-#    types: [started]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-    - name: Initialization environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        echo "Deleting files, please wait ..."
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d/*
-        sudo swapoff /swapfile
-        sudo rm -f /swapfile
-        #docker rmi `docker images -q`
-        #sudo -E apt-get -q purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
-        sudo -E apt-get -qq update
-        sudo -E apt-get -qq install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean
-        curl -fsSL https://raw.githubusercontent.com/P3TERX/dotfiles/master/.bashrc >> ~/.bashrc
-        sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-    - name: Clone source code
-      env: 
-        REPO_URL: https://github.com/coolsnowwolf/lede
-        REPO_BRANCH: master
-      run: git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-    - name: Update feeds
-      run: cd openwrt && ./scripts/feeds update -a
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
+  # schedule:
+  #   - cron: 0 20 * * *
+  # release:
+  #   types: [published]
 
-          
-    - name: Generate configuration file
-      run: |
+jobs:
+
+  build_openwrt:
+
+    name: Build OpenWrt
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@master
+        with:
+          ref: master
+
+      - name: Space cleanup
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          docker rmi `docker images -q`
+          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d
+          sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php*
+          sudo -E apt-get update
+          sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler antlr3 gperf
+          sudo -E apt-get -y autoremove --purge
+          sudo -E apt-get clean
+
+          # sudo mkdir -p -m 777 /mnt/openwrt/bin /mnt/openwrt/build_dir/host /mnt/openwrt/build_dir/hostpkg /mnt/openwrt/dl /mnt/openwrt/feeds /mnt/openwrt/staging_dir
+          # ln -s /mnt/openwrt/bin ./bin
+          # mkdir -p ./build_dir/host && ln -s /mnt/openwrt/build_dir/host ./build_dir/host
+          # mkdir -p ./build_dir/host && ln -s /mnt/openwrt/build_dir/hostpkg ./build_dir/hostpkg
+          # ln -s /mnt/openwrt/dl ./dl
+          # ln -s /mnt/openwrt/feeds ./feeds
+          # ln -s /mnt/openwrt/staging_dir ./staging_dir
+
+          df -h
+
+      - name: Update feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Generate configuration file
+        run: |
           rm -f ./.config*
           touch ./.config
 
@@ -91,11 +98,11 @@ jobs:
           # 
 
           # 编译x64固件:
-          cat >> .config <<EOF
-          CONFIG_TARGET_x86=y
-          CONFIG_TARGET_x86_64=y
-          CONFIG_TARGET_x86_64_Generic=y
-          EOF
+          # cat >> .config <<EOF
+          # CONFIG_TARGET_x86=y
+          # CONFIG_TARGET_x86_64=y
+          # CONFIG_TARGET_x86_64_Generic=y
+          # EOF
 
           # 固件压缩:
           # cat >> .config <<EOF
@@ -187,14 +194,14 @@ jobs:
           sed -i 's/^[ \t]*//g' ./.config
           make defconfig
 
-    - name: Make download
-      run: |
+      - name: Make download
+        run: |
           make download -j8 || make download -j1 V=s
           find ./dl/ -size -1024c -exec rm -f {} \;
           df -h
 
-    - name: Compile firmware
-      run: |
+      - name: Compile firmware
+        run: |
           make -j$(nproc) || make -j1 V=s
           echo "======================="
           echo "Space usage:"
@@ -204,17 +211,17 @@ jobs:
           du -h ./ --max-depth=1
           du -h /mnt/openwrt/ --max-depth=1 || true
 
-    - name: Prepare artifact
-      run: find ./bin/targets/ -type d -name "packages" | xargs rm -rf {}
+      - name: Prepare artifact
+        run: find ./bin/targets/ -type d -name "packages" | xargs rm -rf {}
 
-    - name: Upload config.seed
-      uses: actions/upload-artifact@master
-      with:
+      - name: Upload config.seed
+        uses: actions/upload-artifact@master
+        with:
           name: config.seed
           path: ./bin/targets/*/*/config.seed
 
-    - name: Upload firmware
-      uses: actions/upload-artifact@master
-      with:
-        name: OpenWrt_firmware
-        path: ./bin/targets/
+      - name: Upload firmware
+        uses: actions/upload-artifact@master
+        with:
+          name: OpenWrt_firmware
+          path: ./bin/targets/

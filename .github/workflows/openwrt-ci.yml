@@ -92,7 +92,7 @@ jobs:
           cat >> .config <<EOF
           CONFIG_TARGET_mediatek=y 
           CONFIG_TARGET_mediatek_filogic=y
-        CONFIG_TARGET_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000=y
+          CONFIG_TARGET_mediatek_filogic_DEVICE_xiaomi_redmi-router-ax6000=y
           EOF
 
           # 固件压缩:
@@ -101,9 +101,9 @@ jobs:
           EOF
 
           # 编译UEFI固件:
-          cat >> .config <<EOF
-          CONFIG_EFI_IMAGES=y
-          EOF
+          # cat >> .config <<EOF
+          # CONFIG_EFI_IMAGES=y
+          # EOF
 
           # IPv6支持:
           cat >> .config <<EOF
